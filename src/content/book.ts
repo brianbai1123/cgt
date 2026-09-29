@@ -11,7 +11,7 @@ import {
 
 export type { Entry, SectionName } from "./types";
 export { SECTION_META, SECTIONS } from "./types";
-export { entryHref } from "./nav";
+export { entryHref, entrySlug } from "./nav";
 
 const originals = catalog;
 const readings = readingsJson as Record<string, Reading>;

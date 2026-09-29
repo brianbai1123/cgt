@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { EntryView } from "@/components/entry-view";
 import { ReadingShell } from "@/components/reading-shell";
-import { entries, findEntry } from "@/content/book";
+import { entries, entrySlug, findEntry } from "@/content/book";
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return entries.map((entry) => ({ slug: String(entry.n) }));
+  return entries.map((entry) => ({ slug: entrySlug(entry.n) }));
 }
 
 export async function generateMetadata({

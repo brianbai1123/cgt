@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { entries, sectionGroups, SECTION_META } from "../src/content/book.ts";
-import { catalog } from "../src/content/nav.ts";
+import { entries, findEntry, sectionGroups, SECTION_META } from "../src/content/book.ts";
+import { catalog, entryHref, entrySlug } from "../src/content/nav.ts";
 
 test("清刻本 534 则按顺序排齐", () => {
   assert.equal(entries.length, 534);
@@ -85,6 +85,17 @@ test("每一则都带注释和译文，评语不混进译文", () => {
     }
   }
   assert.equal(entries[237].notes.filter((note) => /^[①②③④]/.test(note)).length, 4);
+});
+
+test("第 404 则避开 Next 保留的 /404/，其余地址不变", () => {
+  assert.equal(entryHref(404), "/0404/");
+  assert.equal(entryHref(403), "/403/");
+  assert.ok(entries.every((entry) => entryHref(entry.n) !== "/404/"));
+  assert.equal(findEntry(entrySlug(404))?.n, 404);
+  const page = readFileSync(new URL("../src/app/[slug]/page.tsx", import.meta.url), "utf8");
+  assert.ok(page.includes("slug: entrySlug(entry.n)"));
+  const notFound = readFileSync(new URL("../src/app/not-found.tsx", import.meta.url), "utf8");
+  assert.ok(notFound.includes("entryHref(404)"));
 });
 
 test("浏览器端目录不带注释和译文", () => {
