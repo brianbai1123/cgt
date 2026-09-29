@@ -1,7 +1,9 @@
+import annotationsJson from "./annotations.json";
 import readingsJson from "./readings.json";
 import { catalog } from "./nav";
 import {
   SECTION_META,
+  type Annotation,
   type Entry,
   type Reading,
   type SectionName,
@@ -13,13 +15,18 @@ export { entryHref } from "./nav";
 
 const originals = catalog;
 const readings = readingsJson as Record<string, Reading>;
+const annotations = annotationsJson as Record<string, Annotation>;
 
 export const entries: Entry[] = originals.map((item) => {
   const reading = readings[String(item.n)];
+  const annotation = annotations[String(item.n)];
   if (!reading) {
     throw new Error(`缺少第 ${item.n} 则解析`);
   }
-  return { ...item, ...reading };
+  if (!annotation) {
+    throw new Error(`缺少第 ${item.n} 则注释与译文`);
+  }
+  return { ...item, ...annotation, ...reading };
 });
 
 export function findEntry(slug: string) {

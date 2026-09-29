@@ -53,11 +53,32 @@ test("每一则先有原文，再有完整的五步", () => {
   }
 });
 
-test("页面先放原文，再按五步解析", () => {
+test("每一则都带注释和译文，评语不混进译文", () => {
+  for (const entry of entries) {
+    assert.ok(entry.notes.length >= 1, String(entry.n));
+    assert.ok(entry.translation.length >= 1, String(entry.n));
+    for (const paragraph of entry.translation) {
+      assert.ok(paragraph.length >= 8, `${entry.n} ${paragraph}`);
+      assert.ok(!/【(评|抨)语】|【注/.test(paragraph), `${entry.n} ${paragraph}`);
+    }
+    for (const note of entry.notes) {
+      assert.ok(note.length >= 4, `${entry.n} ${note}`);
+    }
+  }
+  assert.equal(entries[237].notes.filter((note) => /^[①②③④]/.test(note)).length, 4);
+});
+
+test("浏览器端目录不带注释和译文", () => {
+  assert.ok(catalog.every((entry) => !("notes" in entry) && !("translation" in entry)));
+});
+
+test("页面依次放原文、注释、译文，再按五步解析", () => {
   const entry = readFileSync(new URL("../src/components/entry-view.tsx", import.meta.url), "utf8");
-  const originalAt = entry.indexOf('id="original"');
-  const stepsAt = entry.indexOf("<FiveSteps");
-  assert.ok(originalAt > 0 && stepsAt > originalAt);
+  const order = ['id="original"', 'id="notes"', 'id="translation"', "<FiveSteps"].map((mark) =>
+    entry.indexOf(mark),
+  );
+  assert.ok(order[0] > 0, "original");
+  assert.deepEqual([...order].sort((a, b) => a - b), order);
 
   const steps = readFileSync(new URL("../src/components/steps.tsx", import.meta.url), "utf8");
   const labels = ["先理解", "找出核心观点", "重建逻辑", "用简单语言表达", "检查你是否能快速理解"];

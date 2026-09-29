@@ -9,6 +9,11 @@ export type OriginalEntry = {
   original: string;
 };
 
+export type Annotation = {
+  notes: string[];
+  translation: string[];
+};
+
 export type Check = {
   question: string;
   answer: string;
@@ -22,7 +27,7 @@ export type Reading = {
   checks: Check[];
 };
 
-export type Entry = OriginalEntry & Reading;
+export type Entry = OriginalEntry & Annotation & Reading;
 
 export type SectionMeta = {
   name: SectionName;

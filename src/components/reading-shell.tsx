@@ -5,6 +5,7 @@ import Link from "next/link";
 import { catalog, entryHref, sectionGroups, sectionOf } from "@/content/nav";
 
 const groups = sectionGroups();
+const NOTE_MARKS = /[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]/g;
 
 export function ReadingShell({
   current,
@@ -56,7 +57,7 @@ function ChapterIndex({ current }: { current: number | "start" }) {
         return (
           String(entry.n) === keyword ||
           entry.title.includes(keyword) ||
-          entry.original.includes(keyword) ||
+          entry.original.replace(NOTE_MARKS, "").includes(keyword) ||
           entry.section.includes(keyword)
         );
       })
