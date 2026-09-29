@@ -99,7 +99,7 @@ export function EntryView({ entry }: { entry: Entry }) {
       </nav>
 
       <footer className="mt-16 text-sm leading-relaxed text-muted">
-        这是一份独立导读。原文、注释、译文照录太极书馆所收清刻本《菜根谭》；五步解析是本站按「先理解、找核心、重建逻辑、说人话、自己检查」写的，不替代原书。
+        这是一份独立导读。原文、注释、译文照录太极书馆所收清刻本《菜根谭》；五步解析是本站按「先理解、找核心、理因果链、说人话、自己检查」写的，不替代原书。
       </footer>
     </article>
   );

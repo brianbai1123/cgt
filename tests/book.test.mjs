@@ -33,6 +33,24 @@ test("五部的范围和则数与目录一致", () => {
   );
 });
 
+function assertChain(chain, breaks, label) {
+  assert.ok(chain.length >= 6, label);
+  assert.equal(chain[0].via, undefined, label);
+  for (const link of chain.slice(1)) {
+    assert.ok(link.via, `${label} ${link.claim}`);
+    assert.ok(!link.claim.startsWith(link.via), `${label} repeats via: ${link.claim}`);
+  }
+  for (const link of chain) assert.ok(link.detail.length >= 20, `${label} ${link.claim}`);
+  assert.ok(chain.at(-1).claim.startsWith("结果："), label);
+  assert.ok(breaks.length >= 2, label);
+}
+
+test("总览的五步同样用逻辑因果链", async () => {
+  const { overviewPlain } = await import("../src/content/overview.ts");
+  assert.equal(overviewPlain.logic, undefined);
+  assertChain(overviewPlain.chain, overviewPlain.breaks, "overview");
+});
+
 test("每一则先有原文，再有完整的五步", () => {
   const cores = new Set();
   for (const entry of entries) {
@@ -41,7 +59,8 @@ test("每一则先有原文，再有完整的五步", () => {
     assert.ok(entry.understand.length > 24, String(entry.n));
     assert.equal(entry.core.split("。").length, 2, `${entry.n} ${entry.core}`);
     assert.ok(entry.core.endsWith("。"), entry.core);
-    assert.ok(entry.logic.length >= 3, String(entry.n));
+    assert.equal(entry.logic, undefined, String(entry.n));
+    assertChain(entry.chain, entry.breaks, String(entry.n));
     assert.ok(entry.plain.length > 60, String(entry.n));
     assert.equal(entry.checks.length, 2, String(entry.n));
     for (const check of entry.checks) {
@@ -81,7 +100,7 @@ test("页面依次放原文、注释、译文，再按五步解析", () => {
   assert.deepEqual([...order].sort((a, b) => a - b), order);
 
   const steps = readFileSync(new URL("../src/components/steps.tsx", import.meta.url), "utf8");
-  const labels = ["先理解", "找出核心观点", "重建逻辑", "用简单语言表达", "检查你是否能快速理解"];
+  const labels = ["先理解", "找出核心观点", "逻辑因果链", "用简单语言表达", "检查你是否能快速理解"];
   let cursor = 0;
   for (const label of labels) {
     const at = steps.indexOf(label, cursor);

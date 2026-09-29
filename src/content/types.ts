@@ -19,10 +19,17 @@ export type Check = {
   answer: string;
 };
 
+export type ChainLink = {
+  via?: string;
+  claim: string;
+  detail: string;
+};
+
 export type Reading = {
   understand: string;
   core: string;
-  logic: string[];
+  chain: ChainLink[];
+  breaks: string[];
   plain: string;
   checks: Check[];
 };

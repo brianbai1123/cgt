@@ -21,15 +21,39 @@ export function FiveSteps({
             {reading.core}
           </blockquote>
         </Step>
-        <Step n={3} title="重建逻辑">
-          <ol className="space-y-3">
-            {reading.logic.map((line, lineIndex) => (
-              <li key={line} className="grid grid-cols-[1.5rem_1fr] gap-2">
-                <span className="font-semibold text-clay">{lineIndex + 1}</span>
-                <span>{line}</span>
+        <Step n={3} title="逻辑因果链">
+          <ol>
+            {reading.chain.map((link, linkIndex) => (
+              <li key={link.claim}>
+                {link.via ? (
+                  <p className="flex items-center gap-2 py-2 pl-1.5 text-sm font-semibold text-clay">
+                    <span aria-hidden>↓</span>
+                    {link.via}
+                  </p>
+                ) : null}
+                <div className="flex gap-3">
+                  <span className="mt-1.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-clay/50 text-sm font-semibold leading-none text-clay">
+                    {linkIndex + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-ink">{link.claim}</p>
+                    <p className="mt-1">{link.detail}</p>
+                  </div>
+                </div>
               </li>
             ))}
           </ol>
+          <div className="mt-5 border border-line px-4 py-3 text-[0.95rem]">
+            <p className="font-semibold text-clay">如果这条链断了</p>
+            <ul className="mt-1.5 space-y-1">
+              {reading.breaks.map((line) => (
+                <li key={line} className="flex gap-2">
+                  <span className="mt-3 size-1 shrink-0 rounded-full bg-clay" aria-hidden />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Step>
         <Step n={4} title="用简单语言表达">
           <p>{reading.plain}</p>
