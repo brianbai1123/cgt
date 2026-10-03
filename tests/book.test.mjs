@@ -188,7 +188,7 @@ test("首屏主题脚本使用独立键并安全处理 storage", async () => {
   });
 });
 
-test("布局、主题、字体和切换器遵循统一契约", () => {
+test("布局、主题、字体和切换器遵循统一契约", async () => {
   const layout = readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
   const themeSource = readFileSync(new URL("../src/lib/theme.ts", import.meta.url), "utf8");
@@ -199,16 +199,101 @@ test("布局、主题、字体和切换器遵循统一契约", () => {
 
   assert.ok(layout.includes("THEME_BOOTSTRAP_SCRIPT"));
   assert.ok(layout.includes("suppressHydrationWarning"));
+  const headStart = layout.indexOf("<head>");
+  const bootstrapScript = layout.indexOf("<script", headStart);
+  const headEnd = layout.indexOf("</head>", bootstrapScript);
+  const bodyStart = layout.indexOf("<body", headEnd);
+  assert.ok(headStart >= 0, "layout 必须显式包含 head");
+  assert.ok(bootstrapScript > headStart, "bootstrap script 必须位于 head 内");
+  assert.ok(headEnd > bootstrapScript, "bootstrap script 必须在 head 结束前");
+  assert.ok(bodyStart > headEnd, "head 与 bootstrap script 必须位于 body 前");
+
   assert.ok(layout.includes("Cormorant_Garamond"));
   assert.ok(layout.includes("lxgw-wenkai-screen-web/lxgwwenkaiscreen/result.css"));
   for (const font of ["--font-sans", "--font-serif", "--font-numerals", "font-kai"]) {
     assert.ok(`${layout}\n${css}`.includes(font), font);
   }
+
+  function declarations(selector) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`));
+    assert.ok(match, `缺少 ${selector}`);
+    return Object.fromEntries(
+      [...match[1].matchAll(/(--[\w-]+|color-scheme):\s*([^;]+);/g)].map(
+        ([, property, value]) => [property, value.trim()],
+      ),
+    );
+  }
+
+  assert.deepEqual(declarations(":root"), {
+    "--background": "#f3efe6",
+    "--foreground": "#1c1916",
+    "--pine": "#1c3d36",
+    "--pine-soft": "#e5f0eb",
+    "--clay": "#8a4b32",
+    "--gold": "#b8872f",
+    "--teal": "#1d4a5c",
+    "--band": "#efe4d2",
+    "--line": "#e0d5c4",
+    "--muted": "#5c554c",
+    "--paper": "#f7f3eb",
+    "--ink": "#1c1916",
+    "--mint": "#8fc7b0",
+    "--on-pine": "#f7f3eb",
+    "--selection": "#d7ebe3",
+    "color-scheme": "light",
+  });
+  assert.deepEqual(declarations(':root[data-theme="celadon"]'), {
+    "--background": "#e5ede9",
+    "--foreground": "#16201d",
+    "--pine": "#1d4a5c",
+    "--pine-soft": "#dcebf0",
+    "--clay": "#9c5236",
+    "--gold": "#96722f",
+    "--teal": "#1d4a5c",
+    "--band": "#d6e4de",
+    "--line": "#c3d4cc",
+    "--muted": "#4c5b55",
+    "--paper": "#f1f6f3",
+    "--ink": "#14201c",
+    "--mint": "#82b7a2",
+    "--on-pine": "#f1f6f3",
+    "--selection": "#c7dfe8",
+    "color-scheme": "light",
+  });
+  assert.deepEqual(declarations(':root[data-theme="night"]'), {
+    "--background": "#161412",
+    "--foreground": "#e9e2d5",
+    "--pine": "#8fc7b0",
+    "--pine-soft": "#1f2e29",
+    "--clay": "#e0a07c",
+    "--gold": "#d7b66c",
+    "--teal": "#91c6d8",
+    "--band": "#2a251f",
+    "--line": "#38322a",
+    "--muted": "#a69d90",
+    "--paper": "#1f1c18",
+    "--ink": "#efe8db",
+    "--mint": "#8fc7b0",
+    "--on-pine": "#13201c",
+    "--selection": "#2f4a40",
+    "color-scheme": "dark",
+  });
+
   for (const theme of ['id: "paper"', 'id: "celadon"', 'id: "night"']) {
     assert.ok(themeSource.includes(theme), theme);
   }
-  assert.equal((switcher.match(/role="radio"/g) ?? []).length, 1);
-  assert.ok(switcher.includes("THEMES.map"));
+  assert.ok(switcher.includes('role="radio"'));
+  assert.ok(switcher.includes("aria-checked={theme === option.id}"));
   assert.ok(switcher.includes("cgt-theme-change"));
   assert.ok(shell.includes("<ThemeSwitcher />"));
+
+  const { ThemeSwitcher } = await import(switcherUrl);
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const rendered = renderToStaticMarkup(createElement(ThemeSwitcher));
+  assert.equal((rendered.match(/role="radio"/g) ?? []).length, 3);
+  assert.equal((rendered.match(/aria-checked="true"/g) ?? []).length, 1);
+  assert.equal((rendered.match(/aria-checked="false"/g) ?? []).length, 2);
+  for (const label of ["宣纸", "青瓷", "夜读"]) assert.ok(rendered.includes(label), label);
 });
