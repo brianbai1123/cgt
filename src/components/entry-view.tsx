@@ -12,15 +12,16 @@ export function EntryView({ entry }: { entry: Entry }) {
   return (
     <article id="chapter" className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 sm:py-14">
       <p className="text-sm font-semibold text-clay">
-        第 {index + 1} 则，共 {total} 则
+        第 <span className="font-num">{index + 1}</span> 则，共{" "}
+        <span className="font-num">{total}</span> 则
         <span className="mx-2 text-line">/</span>
         <span className="text-muted">{entry.section}</span>
       </p>
       <h1 className="mt-3 font-serif text-4xl leading-tight text-ink sm:text-5xl">
         {entry.title}
       </h1>
-      <p className="mt-4 text-sm leading-relaxed text-muted">
-        清刻本第 {entry.n} 则 · 洪应明《菜根谭》
+      <p className="mt-4 font-kai text-sm leading-relaxed text-muted">
+        清刻本第 <span className="font-num">{entry.n}</span> 则 · 洪应明《菜根谭》
       </p>
 
       <p className="mt-8 flex flex-wrap gap-4 text-sm">
@@ -82,7 +83,7 @@ export function EntryView({ entry }: { entry: Entry }) {
             className={cn(buttonVariants({ variant: "outline" }), "justify-start")}
           >
             <ArrowLeft />
-            {prev.n}. {prev.title}
+            <span className="font-num">{prev.n}.</span> {prev.title}
           </Link>
         ) : (
           <Link href="/" className={cn(buttonVariants({ variant: "outline" }), "justify-start")}>
@@ -92,13 +93,13 @@ export function EntryView({ entry }: { entry: Entry }) {
         )}
         {next ? (
           <Link href={entryHref(next.n)} className={buttonVariants()}>
-            {next.n}. {next.title}
+            <span className="font-num">{next.n}.</span> {next.title}
             <ArrowRight />
           </Link>
         ) : null}
       </nav>
 
-      <footer className="mt-16 text-sm leading-relaxed text-muted">
+      <footer className="mt-16 font-kai text-sm leading-relaxed text-muted">
         这是一份独立导读。原文、注释、译文照录太极书馆所收清刻本《菜根谭》；五步解析是本站按「先理解、找核心、理因果链、说人话、自己检查」写的，不替代原书。
       </footer>
     </article>

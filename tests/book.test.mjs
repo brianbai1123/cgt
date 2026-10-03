@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import vm from "node:vm";
 import { entries, findEntry, sectionGroups, SECTION_META } from "../src/content/book.ts";
 import { catalog, entryHref, entrySlug } from "../src/content/nav.ts";
 
@@ -118,4 +119,96 @@ test("页面依次放原文、注释、译文，再按五步解析", () => {
     assert.ok(at > cursor, label);
     cursor = at;
   }
+});
+
+test("主题解析遵循 URL、storage、paper 的优先级", async () => {
+  const themeUrl = new URL("../src/lib/theme.ts", import.meta.url);
+  assert.ok(existsSync(themeUrl), "主题模块尚未创建");
+  const { resolveTheme, THEMES } = await import(themeUrl);
+
+  assert.deepEqual(THEMES.map(({ id }) => id), ["paper", "celadon", "night"]);
+  assert.equal(resolveTheme("night", "celadon"), "night");
+  assert.equal(resolveTheme(null, "celadon"), "celadon");
+  assert.equal(resolveTheme("sepia", "celadon"), "celadon");
+  assert.equal(resolveTheme("sepia", "sepia"), "paper");
+});
+
+test("首屏主题脚本使用独立键并安全处理 storage", async () => {
+  const themeUrl = new URL("../src/lib/theme.ts", import.meta.url);
+  assert.ok(existsSync(themeUrl), "主题模块尚未创建");
+  const { THEME_BOOTSTRAP_SCRIPT, THEME_KEY } = await import(themeUrl);
+
+  assert.equal(THEME_KEY, "cgt:theme");
+  assert.deepEqual(
+    [...new Set(THEME_BOOTSTRAP_SCRIPT.match(/[a-z0-9]+:theme/g))],
+    ["cgt:theme"],
+  );
+
+  function runBootstrap({ search = "", stored = null, throws = false }) {
+    const writes = [];
+    const attributes = {};
+    const context = {
+      location: { search },
+      URLSearchParams,
+      localStorage: {
+        getItem() {
+          if (throws) throw new Error("storage unavailable");
+          return stored;
+        },
+        setItem(key, value) {
+          if (throws) throw new Error("storage unavailable");
+          writes.push([key, value]);
+        },
+      },
+      document: {
+        documentElement: {
+          setAttribute(key, value) {
+            attributes[key] = value;
+          },
+          removeAttribute(key) {
+            delete attributes[key];
+          },
+        },
+      },
+    };
+    vm.runInNewContext(THEME_BOOTSTRAP_SCRIPT, context);
+    return { attributes, writes };
+  }
+
+  assert.deepEqual(runBootstrap({ search: "?theme=night", stored: "celadon" }), {
+    attributes: { "data-theme": "night" },
+    writes: [["cgt:theme", "night"]],
+  });
+  assert.deepEqual(runBootstrap({ search: "?theme=invalid", stored: "celadon" }).attributes, {
+    "data-theme": "celadon",
+  });
+  assert.deepEqual(runBootstrap({ search: "?theme=night", throws: true }), {
+    attributes: { "data-theme": "night" },
+    writes: [],
+  });
+});
+
+test("布局、主题、字体和切换器遵循统一契约", () => {
+  const layout = readFileSync(new URL("../src/app/layout.tsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
+  const themeSource = readFileSync(new URL("../src/lib/theme.ts", import.meta.url), "utf8");
+  const switcherUrl = new URL("../src/components/theme-switcher.tsx", import.meta.url);
+  assert.ok(existsSync(switcherUrl), "主题切换器尚未创建");
+  const switcher = readFileSync(switcherUrl, "utf8");
+  const shell = readFileSync(new URL("../src/components/reading-shell.tsx", import.meta.url), "utf8");
+
+  assert.ok(layout.includes("THEME_BOOTSTRAP_SCRIPT"));
+  assert.ok(layout.includes("suppressHydrationWarning"));
+  assert.ok(layout.includes("Cormorant_Garamond"));
+  assert.ok(layout.includes("lxgw-wenkai-screen-web/lxgwwenkaiscreen/result.css"));
+  for (const font of ["--font-sans", "--font-serif", "--font-numerals", "font-kai"]) {
+    assert.ok(`${layout}\n${css}`.includes(font), font);
+  }
+  for (const theme of ['id: "paper"', 'id: "celadon"', 'id: "night"']) {
+    assert.ok(themeSource.includes(theme), theme);
+  }
+  assert.equal((switcher.match(/role="radio"/g) ?? []).length, 1);
+  assert.ok(switcher.includes("THEMES.map"));
+  assert.ok(switcher.includes("cgt-theme-change"));
+  assert.ok(shell.includes("<ThemeSwitcher />"));
 });
